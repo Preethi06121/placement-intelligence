@@ -1,0 +1,26 @@
+<h2>LeetCode Advanced Analysis</h2>
+
+<p>Total Solved: {{ total_stats.total }}</p>
+<p>Easy: {{ total_stats.easy }}</p>
+<p>Medium: {{ total_stats.medium }}</p>
+<p>Hard: {{ total_stats.hard }}</p>
+
+<h3>Topic Distribution (Recent Problems)</h3>
+
+<ul>
+{% for topic, count in topic_count.items() %}
+    <li>{{ topic }} : {{ count }}</li>
+{% endfor %}
+</ul>
+<h3>Recommended Focus Areas</h3>
+<ul>
+{% for rec in feedback.recommendations %}
+    <li>{{ rec }}</li>
+{% endfor %}
+</ul>
+
+<hr>
+
+<h3>Final Coding Score: {{ score }}%</h3>
+
+<a href="/dashboard">Back to Dashboard</a>

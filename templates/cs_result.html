@@ -1,0 +1,25 @@
+<h2>CS Test Result</h2>
+
+<p>Your Score: {{ score }}%</p>
+
+<hr>
+
+<h3>Detailed Review</h3>
+
+<ul>
+{% for item in results %}
+    <li>
+        <strong>Question:</strong> {{ item.question }} <br>
+        <strong>Your Answer:</strong> {{ item.selected }} <br>
+        <strong>Correct Answer:</strong> {{ item.correct }} <br>
+        {% if item.is_correct %}
+            <span style="color:green;">Correct</span>
+        {% else %}
+            <span style="color:red;">Incorrect</span>
+        {% endif %}
+        <hr>
+    </li>
+{% endfor %}
+</ul>
+
+<a href="/dashboard">Back to Dashboard</a>

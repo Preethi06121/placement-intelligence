@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CS Knowledge Test</title>
+</head>
+<body>
+
+    <h2>CS Knowledge Test</h2>
+
+    <form action="/submit_cs_test" method="POST">
+
+        {% for question in questions %}
+
+            {% set q_index = loop.index0 %}
+
+            <p><strong>{{ loop.index }}. {{ question.question }}</strong></p>
+
+            {% for option in question.options %}
+                <input type="radio" 
+                       name="q{{ q_index }}" 
+                       value="{{ option }}" 
+                       required>
+                {{ option }}<br>
+            {% endfor %}
+
+            <br>
+
+        {% endfor %}
+
+        <button type="submit">Submit Test</button>
+
+    </form>
+
+</body>
+</html>

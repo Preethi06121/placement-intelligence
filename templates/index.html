@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Placement Intelligence System</title>
+    <style>
+        body {
+            font-family: Arial;
+            padding: 40px;
+            background-color: #f4f6f8;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            width: 400px;
+            margin: auto;
+            box-shadow: 0px 4px 15px rgba(0,0,0,0.1);
+        }
+        input, button {
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .result {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Placement Intelligence</h2>
+
+    <form action="/full_analysis" method="POST" enctype="multipart/form-data">
+        <input type="text" name="name" placeholder="Name" required>
+        <input type="number" name="coding_score" placeholder="Coding Score" required>
+        <input type="number" name="cs_score" placeholder="CS Score" required>
+        <input type="file" name="resume" accept=".pdf" required>
+        <button type="submit">Analyze</button>
+    </form>
+
+    {% if result %}
+    <div class="result">
+        <h3>Results</h3>
+        <p><b>Resume Score:</b> {{ result.resume_score }}</p>
+        <p><b>Placement Prediction:</b> {{ result.placement_prediction }}</p>
+        <p><b>Skills Found:</b> {{ result.skills_found }}</p>
+    </div>
+    {% endif %}
+</div>
+
+</body>
+</html>

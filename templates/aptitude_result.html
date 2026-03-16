@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Aptitude Result</title>
+</head>
+<body>
+
+<h2>Aptitude Test Result</h2>
+
+<p><strong>Your Score: {{ "%.2f"|format(score) }}%</strong></p>
+
+<hr>
+
+{% for result in results %}
+    <p><strong>{{ result.question }}</strong></p>
+    <p>Your Answer: {{ result.selected }}</p>
+    <p>Correct Answer: {{ result.correct }}</p>
+
+    {% if result.is_correct %}
+        <p style="color:green;">Correct</p>
+    {% else %}
+        <p style="color:red;">Wrong</p>
+    {% endif %}
+
+    <hr>
+{% endfor %}
+
+<a href="/dashboard">Back to Dashboard</a>
+
+</body>
+</html>

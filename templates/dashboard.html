@@ -1,0 +1,57 @@
+
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dashboard</title>
+</head>
+<body>
+    
+    <h2>Welcome to Placement Intelligence</h2>
+
+    <a href="/logout">Logout</a>
+
+    <hr>
+
+    <h3>Take Full Analysis</h3>
+
+    <form action="/full_analysis" method="POST" enctype="multipart/form-data">
+
+        <label>Paste Job Description:</label><br>
+        <textarea name="job_description" rows="8" cols="60" required></textarea>
+        <br><br>
+
+        <label>Upload Resume (PDF):</label><br>
+        <input type="file" name="resume" accept=".pdf" required><br><br>
+
+        <p>CS Test Score: {{ session.get('cs_score', 'Not Taken') }}</p>
+        <p>Coding Score: {{ session.get('coding_score', 'Not Calculated') }}</p>
+        <p>Aptitude Score: {{ session.get('aptitude_score', 'Not Taken') }}</p>
+
+        <a href="/cs_test">Take CS Test</a>
+        <a href="/aptitude_test">Take Aptitude Test</a>
+        <a href="/coding_analysis">Analyze Coding Profile</a>
+        <button type="submit">Analyze</button>
+
+    </form>
+
+    <hr>
+
+    <h3>Your Previous Attempts</h3>
+
+    {% for attempt in attempts %}
+        <div style="border:1px solid black; padding:10px; margin:10px;">
+            Resume Score: {{ attempt.resume_score }}<br>
+            Coding Score: {{ attempt.coding_score }}<br>
+            CS Score: {{ attempt.cs_score }}<br>
+            Overall Score: {{ "%.2f"|format(attempt.overall_score) }}
+            Readiness: {{ attempt.readiness_label }}<br>
+            Weakest Area: {{ attempt.cluster_label }}<br>
+            Date: {{ attempt.created_at }}
+        </div>
+    {% else %}
+        <p>No attempts yet.</p>
+    {% endfor %}
+
+</body>
+</html>
