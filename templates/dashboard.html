@@ -4,6 +4,7 @@
 <html>
 <head>
     <title>Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     
@@ -18,7 +19,7 @@
     <form action="/full_analysis" method="POST" enctype="multipart/form-data">
 
         <label>Paste Job Description:</label><br>
-        <textarea name="job_description" rows="8" cols="60" required></textarea>
+        <textarea name="job_description" rows="8" cols="60" placeholder="Optional — improves skill matching if provided"></textarea>
         <br><br>
 
         <label>Upload Resume (PDF):</label><br>
@@ -38,20 +39,57 @@
     <hr>
 
     <h3>Your Previous Attempts</h3>
-
-    {% for attempt in attempts %}
-        <div style="border:1px solid black; padding:10px; margin:10px;">
-            Resume Score: {{ attempt.resume_score }}<br>
-            Coding Score: {{ attempt.coding_score }}<br>
-            CS Score: {{ attempt.cs_score }}<br>
-            Overall Score: {{ "%.2f"|format(attempt.overall_score) }}
-            Readiness: {{ attempt.readiness_label }}<br>
-            Weakest Area: {{ attempt.cluster_label }}<br>
-            Date: {{ attempt.created_at }}
-        </div>
+    {% if attempts %}
+        <ul>
+            {% for attempt in attempts %}
+                <li>
+                    {% set badgeColor = 'green' if attempt.readiness_label == 'READY' else ('orange' if attempt.readiness_label == 'ALMOST_READY' else 'red') %}
+                    <span style="padding:6px 12px; border-radius:20px; color:white; background-color: {{ badgeColor }};">
+                        {{ attempt.readiness_label }}
+                    </span>
+                    <div>Overall Score: {{ "%.2f"|format(attempt.overall_score or 0) }}</div>
+                    <div>Resume: {{ "%.2f"|format(attempt.resume_score or 0) }}, Coding: {{ "%.2f"|format(attempt.coding_score or 0) }}, CS: {{ "%.2f"|format(attempt.cs_score or 0) }}, Aptitude: {{ "%.2f"|format(attempt.aptitude_score or 0) }}</div>
+                    <div>Cluster: {{ attempt.cluster_label }}</div>
+                </li>
+            {% endfor %}
+        </ul>
     {% else %}
-        <p>No attempts yet.</p>
-    {% endfor %}
+        <p>No attempts yet. Take the tests and upload a resume to see results.</p>
+    {% endif %}
+
+    <hr>
+
+    <h3>Performance Overview</h3>
+
+<canvas id="performanceChart" width="400" height="400"></canvas>
+
+{% if attempts %}
+    <script>
+        const resumeScore = {{ attempts[0].resume_score or 0 }};
+        const codingScore = {{ attempts[0].coding_score or 0 }};
+        const csScore = {{ attempts[0].cs_score or 0 }};
+        const aptitudeScore = {{ attempts[0].aptitude_score or 0 }};
+
+        const ctx = document.getElementById('performanceChart').getContext('2d');
+
+        new Chart(ctx, {
+            type: 'radar',
+            data: {
+                labels: ['Resume', 'Coding', 'CS', 'Aptitude'],
+                datasets: [{
+                    label: 'Latest Attempt',
+                    data: [resumeScore, codingScore, csScore, aptitudeScore],
+                    fill: true
+                }]
+            },
+            options: {
+                scales: {
+                    r: { min: 0, max: 100 }
+                }
+            }
+        });
+    </script>
+{% endif %}
 
 </body>
 </html>
