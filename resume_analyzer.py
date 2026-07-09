@@ -16,10 +16,19 @@ COMMON_SKILLS = [
 ]
 
 
-def analyze_resume(resume_text, job_description):
+_DEFAULT_JD = (
+    "software engineer developer internship placement full time "
+    "python java algorithms data structures sql web machine learning "
+    "backend frontend cs computer science"
+)
+
+
+def analyze_resume(resume_text, job_description=None):
 
     resume_text = resume_text.lower()
-    job_description = job_description.lower()
+    job_description = (job_description or "").strip().lower()
+    if not job_description:
+        job_description = _DEFAULT_JD
 
     # -------- 1️⃣ Extract required skills from JD --------
     required_skills = []

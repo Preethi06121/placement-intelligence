@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LeetCode — Placement Intelligence</title>
+  <link rel="stylesheet" href="/static/ui/css/main.css" />
+</head>
+<body>
+  <header class="topbar">
+    <span class="brand">Placement Intelligence</span>
+    <nav class="nav-auth">
+      <a href="/app/dashboard">Dashboard</a>
+      <a href="/app/resume">Resume</a>
+      <a href="/app/cs-test">CS test</a>
+      <a href="/app/aptitude">Aptitude</a>
+      <a href="/app/coding">LeetCode</a>
+      <button type="button" id="btn-logout" class="btn btn-ghost">Logout</button>
+    </nav>
+  </header>
+  <main class="main">
+    <div class="card">
+      <h1>LeetCode profile</h1>
+      <form id="form-code">
+        <div class="field">
+          <label>Profile URL</label>
+          <input type="text" name="url" placeholder="https://leetcode.com/u/username" required />
+        </div>
+        <p id="form-err" class="error" hidden></p>
+        <button type="submit" class="btn">Analyze</button>
+        <a href="/app/dashboard" style="margin-left: 12px">Back</a>
+      </form>
+      <div id="code-out" style="margin-top: 24px"></div>
+    </div>
+  </main>
+  <script src="/static/ui/js/api.js"></script>
+  <script src="/static/ui/js/utils.js"></script>
+  <script src="/static/ui/js/auth-nav.js"></script>
+  <script src="/static/ui/js/coding.js"></script>
+</body>
+</html>

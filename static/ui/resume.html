@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Resume — Placement Intelligence</title>
+  <link rel="stylesheet" href="/static/ui/css/main.css" />
+</head>
+<body>
+  <header class="topbar">
+    <span class="brand">Placement Intelligence</span>
+    <nav class="nav-auth">
+      <a href="/app/dashboard">Dashboard</a>
+      <a href="/app/resume">Resume</a>
+      <a href="/app/cs-test">CS test</a>
+      <a href="/app/aptitude">Aptitude</a>
+      <a href="/app/coding">LeetCode</a>
+      <button type="button" id="btn-logout" class="btn btn-ghost">Logout</button>
+    </nav>
+  </header>
+  <main class="main">
+    <div class="card">
+      <h1>Resume &amp; full analysis</h1>
+      <p class="muted">
+        Upload your resume (PDF). Your <strong>CS test</strong>, <strong>LeetCode</strong>, and
+        <strong>aptitude</strong> scores from this session are combined automatically with your resume score —
+        no extra fields required.
+      </p>
+      <p class="muted">
+        Optional: paste a job description to tailor skill matching and similarity scoring. Leave it blank to use a general placement profile.
+      </p>
+      <form id="form-resume">
+        <div class="field">
+          <label>Job description <span class="muted">(optional)</span></label>
+          <textarea name="jd" placeholder="Paste a JD if you have one…"></textarea>
+        </div>
+        <div class="field">
+          <label>Resume (PDF)</label>
+          <input type="file" name="resume" accept=".pdf" required />
+        </div>
+        <p id="form-err" class="error" hidden></p>
+        <button type="submit" class="btn">Run full analysis</button>
+      </form>
+    </div>
+  </main>
+  <script src="/static/ui/js/api.js"></script>
+  <script src="/static/ui/js/auth-nav.js"></script>
+  <script src="/static/ui/js/resume.js"></script>
+</body>
+</html>
