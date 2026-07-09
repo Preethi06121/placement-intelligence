@@ -2,8 +2,9 @@ import database
 from clustering import assign_cluster
 from cs_questions import get_random_questions
 from flask import Flask, request, jsonify, render_template, redirect, session, url_for, send_from_directory
-from flask_login import LoginManager, login_user, login_required, logout_user, current_user
+from flask_login import login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
+from app.extensions import login_manager
 from database import db, User, Attempt
 
 from aptitude_questions import get_random_aptitude_questions
@@ -27,7 +28,6 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db.init_app(app)
 
-login_manager = LoginManager()
 login_manager.login_view = "spa_login"
 login_manager.init_app(app)
 
