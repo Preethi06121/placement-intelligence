@@ -4,6 +4,7 @@ from cs_questions import get_random_questions
 from flask import Flask, request, jsonify, render_template, redirect, session, url_for, send_from_directory
 from flask_login import login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
+from app.config import Config
 from app.extensions import login_manager
 from database import db, User, Attempt
 
@@ -22,9 +23,7 @@ import os
 
 app = Flask(__name__)
 
-app.config['SECRET_KEY'] = 'super_secret_key_here'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:g7hkSRyZ@localhost:5432/placement_db'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config.from_object(Config)
 
 db.init_app(app)
 
