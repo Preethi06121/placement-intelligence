@@ -5,7 +5,7 @@ from flask import Flask, request, jsonify, render_template, redirect, session, u
 from flask_login import login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from app.config import Config
-from app.extensions import login_manager
+from app.extensions import login_manager, migrate
 from database import db, User, Attempt
 
 from aptitude_questions import get_random_aptitude_questions
@@ -27,6 +27,7 @@ def create_app():
     flask_app.config.from_object(Config)
 
     db.init_app(flask_app)
+    migrate.init_app(flask_app, db)
 
     login_manager.login_view = "spa_login"
     login_manager.init_app(flask_app)
