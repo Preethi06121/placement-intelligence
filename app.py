@@ -21,14 +21,20 @@ from resume_analyzer import analyze_resume
 from predictor import predict_placement
 import os
 
-app = Flask(__name__)
 
-app.config.from_object(Config)
+def create_app():
+    flask_app = Flask(__name__)
+    flask_app.config.from_object(Config)
 
-db.init_app(app)
+    db.init_app(flask_app)
 
-login_manager.login_view = "spa_login"
-login_manager.init_app(app)
+    login_manager.login_view = "spa_login"
+    login_manager.init_app(flask_app)
+
+    return flask_app
+
+
+app = create_app()
 
 
 @login_manager.unauthorized_handler
