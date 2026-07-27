@@ -6,7 +6,7 @@ from flask_login import login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from app.config import Config
 from app.errors import register_error_handlers
-from app.extensions import jwt, login_manager, migrate
+from app.extensions import jwt, limiter, login_manager, migrate
 from app.logger import configure_logging
 from database import db, User, Attempt
 
@@ -31,6 +31,7 @@ def create_app():
 
     db.init_app(flask_app)
     jwt.init_app(flask_app)
+    limiter.init_app(flask_app)
     migrate.init_app(flask_app, db)
 
     login_manager.login_view = "spa_login"
