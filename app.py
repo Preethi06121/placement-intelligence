@@ -5,6 +5,7 @@ from flask import Flask, request, jsonify, render_template, redirect, session, u
 from flask_login import login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from app.config import Config
+from app.errors import register_error_handlers
 from app.extensions import login_manager, migrate
 from app.logger import configure_logging
 from database import db, User, Attempt
@@ -33,6 +34,7 @@ def create_app():
 
     login_manager.login_view = "spa_login"
     login_manager.init_app(flask_app)
+    register_error_handlers(flask_app)
 
     return flask_app
 
