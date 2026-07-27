@@ -6,6 +6,7 @@ from flask_login import login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from app.config import Config
 from app.extensions import login_manager, migrate
+from app.logger import configure_logging
 from database import db, User, Attempt
 
 from aptitude_questions import get_random_aptitude_questions
@@ -25,6 +26,7 @@ import os
 def create_app():
     flask_app = Flask(__name__)
     flask_app.config.from_object(Config)
+    configure_logging(flask_app)
 
     db.init_app(flask_app)
     migrate.init_app(flask_app, db)
