@@ -3,6 +3,8 @@ export type MeResponse = {
   user: { id: number; email: string } | null
 }
 
+const TOKEN_KEY = 'placement_access_token'
+
 export type Attempt = {
   id: number
   user_id: number
@@ -48,9 +50,13 @@ export type CodingAnalysisResponse = {
 }
 
 async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
+  const headers = new Headers(init?.headers)
+  const token = localStorage.getItem(TOKEN_KEY)
+  if (token) headers.set('Authorization', `Bearer ${token}`)
   const res = await fetch(path, {
     ...init,
     credentials: 'include',
+    headers,
   })
 
   const text = await res.text()
@@ -84,26 +90,26 @@ export function apiLogout() {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({}),
-  })
+  }).finally(() => localStorage.removeItem(TOKEN_KEY))
 }
 
 export function apiSignup(payload: { email: string; password: string }) {
-  return apiFetch<{ ok: boolean }>('/api/signup', {
+  return apiFetch<{ ok: boolean; access_token: string; user: { id: number; email: string } }>('/api/signup', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
-  })
+  }).then((result) => { localStorage.setItem(TOKEN_KEY, result.access_token); return result })
 }
 
 export function apiLogin(payload: { email: string; password: string }) {
-  return apiFetch<{ ok: boolean; user: { id: number; email: string } }>(
+  return apiFetch<{ ok: boolean; access_token: string; user: { id: number; email: string } }>(
     '/api/login',
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     },
-  )
+  ).then((result) => { localStorage.setItem(TOKEN_KEY, result.access_token); return result })
 }
 
 export function apiProgress() {

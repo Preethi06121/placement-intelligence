@@ -1,8 +1,3 @@
-import runpy
-
-
-def create_app():
-    return runpy.run_path("app.py")["app"]
-
+from app import create_app
 
 app = create_app()

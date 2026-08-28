@@ -8,10 +8,11 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(150), unique=True, nullable=False)
     password = db.Column(db.String(200), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    attempts = db.relationship("Attempt", back_populates="user", lazy="dynamic", cascade="all, delete-orphan")
 
 class Attempt(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"))
     resume_score = db.Column(db.Float)
     coding_score = db.Column(db.Float)
     cs_score = db.Column(db.Float)
@@ -20,3 +21,4 @@ class Attempt(db.Model):
     readiness_label = db.Column(db.String(50))
     cluster_label = db.Column(db.String(100))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    user = db.relationship("User", back_populates="attempts")

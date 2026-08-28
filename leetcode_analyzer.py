@@ -7,15 +7,34 @@ HEADERS = {
     "Content-Type": "application/json",
     "Referer": "https://leetcode.com"
 }
+REQUEST_TIMEOUT_SECONDS = 10
+
+
+class CodingPlatformUnavailable(Exception):
+    """Raised when LeetCode cannot provide a usable GraphQL response."""
+
+
+def _response_data(response):
+    if not isinstance(response, dict) or response.get("errors"):
+        raise CodingPlatformUnavailable()
+    data = response.get("data")
+    if not isinstance(data, dict):
+        raise CodingPlatformUnavailable()
+    return data
 
 
 def graphql_query(query, variables):
-    response = requests.post(
-        GRAPHQL_URL,
-        json={"query": query, "variables": variables},
-        headers=HEADERS
-    )
-    return response.json()
+    try:
+        response = requests.post(
+            GRAPHQL_URL,
+            json={"query": query, "variables": variables},
+            headers=HEADERS,
+            timeout=REQUEST_TIMEOUT_SECONDS,
+        )
+        response.raise_for_status()
+        return response.json()
+    except (requests.RequestException, ValueError) as exc:
+        raise CodingPlatformUnavailable() from exc
 
 
 # -------------------------------------------------
@@ -36,16 +55,26 @@ def fetch_total_stats(username):
     """
 
     variables = {"username": username}
-    data = graphql_query(query, variables)
+    data = _response_data(graphql_query(query, variables))
 
-    if "data" not in data or data["data"]["matchedUser"] is None:
+    if "matchedUser" not in data:
+        raise CodingPlatformUnavailable()
+    if data["matchedUser"] is None:
         return None
 
-    stats = data["data"]["matchedUser"]["submitStatsGlobal"]["acSubmissionNum"]
+    try:
+        stats = data["matchedUser"]["submitStatsGlobal"]["acSubmissionNum"]
+    except (KeyError, TypeError) as exc:
+        raise CodingPlatformUnavailable() from exc
+    if not isinstance(stats, list):
+        raise CodingPlatformUnavailable()
 
     result = {}
     for item in stats:
-        result[item["difficulty"]] = item["count"]
+        try:
+            result[item["difficulty"]] = item["count"]
+        except (KeyError, TypeError) as exc:
+            raise CodingPlatformUnavailable() from exc
 
     return {
         "easy": result.get("Easy", 0),
@@ -68,14 +97,20 @@ def fetch_recent_slugs(username, limit=150):
     """
 
     variables = {"username": username, "limit": limit}
-    data = graphql_query(query, variables)
+    data = _response_data(graphql_query(query, variables))
 
-    if "data" not in data:
+    if "recentAcSubmissionList" not in data:
+        raise CodingPlatformUnavailable()
+    submissions = data["recentAcSubmissionList"]
+    if submissions is None:
         return []
+    if not isinstance(submissions, list):
+        raise CodingPlatformUnavailable()
 
-    submissions = data["data"]["recentAcSubmissionList"]
-
-    unique_slugs = list({s["titleSlug"] for s in submissions})
+    try:
+        unique_slugs = list({s["titleSlug"] for s in submissions})
+    except (KeyError, TypeError) as exc:
+        raise CodingPlatformUnavailable() from exc
     return unique_slugs
 
 
@@ -91,13 +126,18 @@ def fetch_problem_topics(slug):
     """
 
     variables = {"titleSlug": slug}
-    data = graphql_query(query, variables)
+    data = _response_data(graphql_query(query, variables))
 
-    if "data" not in data or data["data"]["question"] is None:
+    if "question" not in data:
+        raise CodingPlatformUnavailable()
+    if data["question"] is None:
         return []
 
-    tags = data["data"]["question"]["topicTags"]
-    return [tag["name"] for tag in tags]
+    try:
+        tags = data["question"]["topicTags"]
+        return [tag["name"] for tag in tags]
+    except (KeyError, TypeError) as exc:
+        raise CodingPlatformUnavailable() from exc
 
 
 # -------------------------------------------------
