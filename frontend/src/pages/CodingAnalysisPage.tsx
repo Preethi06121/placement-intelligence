@@ -1,88 +1,135 @@
-import { useState } from 'react'
-import { apiCodingAnalysis, type CodingAnalysisResponse } from '../api'
+import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { apiCodingAnalysis, type ApiError, type CodingAnalysisResponse } from '../api'
+import AppShell from '../components/AppShell'
+import AssessmentGate from '../components/AssessmentGate'
+import Button from '../components/Button'
+import Card from '../components/Card'
+import ErrorMessage from '../components/ErrorMessage'
+import ScoreCard from '../components/ScoreCard'
+import StepProgress from '../components/StepProgress'
+import { fetchProgress, useAssessment } from '../context/AssessmentContext'
 
-export default function CodingAnalysisPage() {
+type CodingAnalysisPageProps = {
+  userEmail?: string | null
+  onLogout: () => void
+}
+
+function CodingAnalysisContent({ userEmail, onLogout }: CodingAnalysisPageProps) {
+  const navigate = useNavigate()
+  const { setCodingFeedback, skipCodingAnalysis, codingUnavailable, getCompletedSteps } = useAssessment()
   const [leetcodeUrl, setLeetcodeUrl] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [score, setScore] = useState<number | null>(null)
   const [result, setResult] = useState<CodingAnalysisResponse | null>(null)
+  const [platformUnavailable, setPlatformUnavailable] = useState(false)
+  const [completed, setCompleted] = useState<ReturnType<typeof getCompletedSteps>>([])
+
+  useEffect(() => {
+    fetchProgress().then((p) => {
+      setCompleted(getCompletedSteps())
+      if (!codingUnavailable && p.coding_score != null) setScore(p.coding_score)
+    })
+  }, [codingUnavailable, getCompletedSteps])
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
+    setPlatformUnavailable(false)
     setLoading(true)
-    setResult(null)
     try {
       const res = await apiCodingAnalysis({ leetcode_url: leetcodeUrl })
+      setScore(res.score)
       setResult(res)
+      setCodingFeedback(res.feedback)
+      setCompleted((prev) => (prev.includes('coding') ? prev : [...prev, 'coding']))
     } catch (err) {
-      setError((err as Error).message)
+      const apiError = err as ApiError
+      setError(apiError.message)
+      setPlatformUnavailable(apiError.code === 'CODING_PLATFORM_UNAVAILABLE')
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div style={{ padding: 24, textAlign: 'left', maxWidth: 980, margin: '0 auto' }}>
-      <h2>Analyze LeetCode Profile</h2>
+    <AppShell userEmail={userEmail} onLogout={onLogout}>
+      <StepProgress current="coding" completed={completed} />
+      <Card
+        title="Coding profile analysis"
+        subtitle="Paste your LeetCode profile URL. Your coding score will be saved for the final analysis."
+      >
+        <form onSubmit={onSubmit}>
+          <div className="field">
+            <label htmlFor="leetcode">LeetCode profile URL</label>
+            <input
+              id="leetcode"
+              className="input"
+              type="url"
+              placeholder="https://leetcode.com/u/your-username/"
+              value={leetcodeUrl}
+              onChange={(e) => setLeetcodeUrl(e.target.value)}
+              required
+            />
+          </div>
+          {error ? <ErrorMessage message={error} /> : null}
+          <Button type="submit" disabled={loading}>
+            {loading ? 'Analyzing…' : 'Analyze profile'}
+          </Button>
+        </form>
 
-      {error ? <p style={{ color: 'red' }}>{error}</p> : null}
+        {platformUnavailable ? (
+          <div className="analysis-summary">
+            <p>The coding platform is temporarily unavailable. You can continue the assessment without coding analysis for now.</p>
+            <Button onClick={() => {
+              skipCodingAnalysis()
+              setCompleted((prev) => (prev.includes('coding') ? prev : [...prev, 'coding']))
+              navigate('/assessment/cs-test')
+            }}>
+              Continue without coding analysis
+            </Button>
+          </div>
+        ) : null}
 
-      <form onSubmit={onSubmit}>
-        <input
-          style={{ width: 520, padding: 10 }}
-          type="text"
-          placeholder="Paste LeetCode profile URL"
-          value={leetcodeUrl}
-          onChange={(e) => setLeetcodeUrl(e.target.value)}
-          required
-        />
-        <div>
-          <button style={{ marginTop: 16 }} type="submit" disabled={loading}>
-            {loading ? 'Analyzing...' : 'Analyze'}
-          </button>
-        </div>
-      </form>
+        {score != null ? (
+          <div className="analysis-summary">
+            <ScoreCard label="Coding score" value={score} />
+            {result ? (
+              <>
+                <p><strong>Solved:</strong> {result.total_stats.total} · Easy {result.total_stats.easy} · Medium {result.total_stats.medium} · Hard {result.total_stats.hard}</p>
+                <p><strong>Readiness:</strong> {result.feedback.readiness}</p>
+                <AnalysisList title="Strengths" items={result.feedback.strengths} />
+                <AnalysisList title="Developing areas" items={result.feedback.moderate} />
+                <AnalysisList title="Focus areas" items={result.feedback.weaknesses} />
+                <AnalysisList title="Recommendations" items={result.feedback.recommendations} />
+                <AnalysisList title="Suggestions" items={result.feedback.suggestions} />
+              </>
+            ) : null}
+            <div className="btn-row">
+              <Button to="/assessment/cs-test">Continue to CS Test</Button>
+            </div>
+          </div>
+        ) : null}
+      </Card>
+    </AppShell>
+  )
+}
 
-      {result ? (
-        <div style={{ marginTop: 24 }}>
-          <h3>Final Coding Score: {result.score}%</h3>
-          <p>
-            Total Solved: <b>{result.total_stats.total}</b> | Easy: <b>{result.total_stats.easy}</b> | Medium:{' '}
-            <b>{result.total_stats.medium}</b> | Hard: <b>{result.total_stats.hard}</b>
-          </p>
-
-          <hr />
-          <h4>Topic Distribution (Recent Problems)</h4>
-          <ul>
-            {Object.entries(result.topic_count).map(([topic, count]) => (
-              <li key={topic}>
-                {topic}: {count}
-              </li>
-            ))}
-          </ul>
-
-          <hr />
-          <h4>Recommended Focus Areas</h4>
-          {result.feedback.recommendations.length ? (
-            <ul>
-              {result.feedback.recommendations.map((r, i) => (
-                <li key={i}>{r}</li>
-              ))}
-            </ul>
-          ) : (
-            <p>No specific recommendations right now.</p>
-          )}
-
-          <h4 style={{ marginTop: 16 }}>Suggestions</h4>
-          <ul>
-            {result.feedback.suggestions.map((s, i) => (
-              <li key={i}>{s}</li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
+function AnalysisList({ title, items }: { title: string; items: string[] }) {
+  if (!items.length) return null
+  return (
+    <div className="analysis-list">
+      <strong>{title}</strong>
+      <ul>{items.map((item) => <li key={item}>{item}</li>)}</ul>
     </div>
   )
 }
 
+export default function CodingAnalysisPage(props: CodingAnalysisPageProps) {
+  return (
+    <AssessmentGate requiredStep="coding">
+      <CodingAnalysisContent {...props} />
+    </AssessmentGate>
+  )
+}

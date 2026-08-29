@@ -35,6 +35,19 @@ export type CSSubmitResponse = {
   }>
 }
 
+export type ResumeUploadResponse = {
+  resume_score: number
+  skills_found: string[]
+  analysis: {
+    resume_score: number
+    semantic_score: number
+    skill_score: number
+    strength_score: number
+    skills_required: string[]
+    skills_matched: string[]
+  }
+}
+
 export type CodingAnalysisResponse = {
   total_stats: { easy: number; medium: number; hard: number; total: number }
   topic_count: Record<string, number>
@@ -48,6 +61,13 @@ export type CodingAnalysisResponse = {
     readiness: string
   }
 }
+
+type ErrorResponse = {
+  error?: string | { code?: string; message?: string }
+  message?: string
+}
+
+export type ApiError = Error & { code?: string }
 
 async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const headers = new Headers(init?.headers)
@@ -63,14 +83,22 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const json = text ? safeJsonParse(text) : null
 
   if (!res.ok) {
-    const anyJson = json as any
+    const errorJson = isErrorResponse(json) ? json : undefined
+    const errorValue = errorJson?.error
     const message =
-      (anyJson && (anyJson.error || anyJson.message)) ||
+      (typeof errorValue === 'string' ? errorValue : errorValue?.message) ||
+      errorJson?.message ||
       `Request failed (${res.status})`
-    throw new Error(message)
+    const error = new Error(message) as ApiError
+    if (typeof errorValue === 'object' && errorValue?.code) error.code = errorValue.code
+    throw error
   }
 
   return json as T
+}
+
+function isErrorResponse(value: unknown): value is ErrorResponse {
+  return typeof value === 'object' && value !== null
 }
 
 function safeJsonParse(text: string): unknown {
@@ -110,6 +138,13 @@ export function apiLogin(payload: { email: string; password: string }) {
       body: JSON.stringify(payload),
     },
   ).then((result) => { localStorage.setItem(TOKEN_KEY, result.access_token); return result })
+}
+
+export function apiResumeUpload(formData: FormData) {
+  return apiFetch<ResumeUploadResponse>('/api/resume/upload', {
+    method: 'POST',
+    body: formData,
+  })
 }
 
 export function apiProgress() {
@@ -157,7 +192,7 @@ export function apiCodingAnalysis(payload: { leetcode_url: string }) {
 export type FullAnalysisResponse = {
   ok: boolean
   attempt: Attempt
-  resume_analysis: any
+  resume_analysis: ResumeUploadResponse['analysis']
   placement_prediction: unknown
 }
 

@@ -1,16 +1,15 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import { apiLogin } from '../api'
+import Button from '../components/Button'
+import Card from '../components/Card'
+import ErrorMessage from '../components/ErrorMessage'
 
-export default function LoginPage({
-  apiLogin,
-  onLoggedIn,
-}: {
-  apiLogin: (payload: { email: string; password: string }) => Promise<{
-    ok: boolean
-    user: { id: number; email: string }
-  }>
+type LoginPageProps = {
   onLoggedIn: () => void
-}) {
+}
+
+export default function LoginPage({ onLoggedIn }: LoginPageProps) {
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -24,7 +23,7 @@ export default function LoginPage({
     try {
       await apiLogin({ email, password })
       onLoggedIn()
-      navigate('/dashboard')
+      navigate('/assessment/resume')
     } catch (err) {
       setError((err as Error).message)
     } finally {
@@ -33,48 +32,44 @@ export default function LoginPage({
   }
 
   return (
-    <div style={{ padding: 24 }}>
-      <h2>Login</h2>
-      <form onSubmit={onSubmit}>
-        <div style={{ marginTop: 12 }}>
-          <input
-            style={{ width: 320, padding: 10 }}
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-        </div>
-        <div style={{ marginTop: 12 }}>
-          <input
-            style={{ width: 320, padding: 10 }}
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-        </div>
-        {error ? <p style={{ color: 'red' }}>{error}</p> : null}
-        <button style={{ marginTop: 16 }} type="submit" disabled={loading}>
-          {loading ? 'Logging in...' : 'Login'}
-        </button>
-      </form>
-
-      <p style={{ marginTop: 16 }}>
-        No account?{' '}
-        <a
-          href="/signup"
-          onClick={(e) => {
-            e.preventDefault()
-            navigate('/signup')
-          }}
-        >
-          Signup
-        </a>
-      </p>
+    <div className="app-main app-main--center">
+      <div className="auth-page">
+        <Card title="Sign in">
+          <form onSubmit={onSubmit}>
+            <div className="field">
+              <label htmlFor="email">Email</label>
+              <input
+                id="email"
+                className="input"
+                type="email"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </div>
+            <div className="field">
+              <label htmlFor="password">Password</label>
+              <input
+                id="password"
+                className="input"
+                type="password"
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </div>
+            {error ? <ErrorMessage message={error} /> : null}
+            <Button type="submit" disabled={loading}>
+              {loading ? 'Signing in…' : 'Sign in'}
+            </Button>
+          </form>
+          <p className="auth-footer">
+            No account? <Link to="/signup">Create one</Link>
+          </p>
+        </Card>
+      </div>
     </div>
   )
 }
-

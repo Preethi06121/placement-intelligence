@@ -1,162 +1,196 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import Chart from 'chart.js/auto'
-import { apiDashboard, apiProgress, type Attempt } from '../api'
+import { apiDashboard, type Attempt } from '../api'
+import AppShell from '../components/AppShell'
+import Button from '../components/Button'
+import Card from '../components/Card'
+import ErrorMessage from '../components/ErrorMessage'
+import LoadingState from '../components/LoadingState'
+import ScoreCard from '../components/ScoreCard'
+import StatusBadge from '../components/StatusBadge'
+import { useAssessment } from '../context/AssessmentContext'
 
-function badgeColor(readiness: string) {
-  if (readiness === 'READY') return 'green'
-  if (readiness === 'ALMOST_READY') return 'orange'
-  return 'red'
+type DashboardPageProps = {
+  userEmail?: string | null
+  onLogout: () => void
 }
 
-export default function DashboardPage({
-  apiLogout,
-  onNeedAuthRefresh,
-}: {
-  apiLogout: () => Promise<{ ok: boolean }>
-  onNeedAuthRefresh: () => void
-}) {
-  const [dashboard, setDashboard] = useState<{
-    attempts: Attempt[]
-    latest: Attempt | null
-  } | null>(null)
-  const [progress, setProgress] = useState<{
-    cs_score: number | null
-    coding_score: number | null
-    aptitude_score: number | null
-  } | null>(null)
+function buildFallbackTips(latest: Attempt): string[] {
+  const scores = [
+    { label: 'Resume', value: latest.resume_score },
+    { label: 'Coding', value: latest.coding_score },
+    { label: 'CS', value: latest.cs_score },
+    { label: 'Aptitude', value: latest.aptitude_score },
+  ]
+  const weakest = [...scores].sort((a, b) => a.value - b.value)[0]
+  return [`Focus on improving your ${weakest.label} score (${weakest.value.toFixed(1)}).`]
+}
+
+export default function DashboardPage({ userEmail, onLogout }: DashboardPageProps) {
+  const navigate = useNavigate()
+  const { improveTips, resetAssessment } = useAssessment()
+  const [latest, setLatest] = useState<Attempt | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
   const chartRef = useRef<Chart | null>(null)
+  const canvasRef = useRef<HTMLCanvasElement | null>(null)
 
   useEffect(() => {
     const run = async () => {
       try {
         setError(null)
-        const [dash, prog] = await Promise.all([apiDashboard(), apiProgress()])
-        setDashboard(dash)
-        setProgress(prog)
+        const dash = await apiDashboard()
+        setLatest(dash.latest)
       } catch (e) {
         setError((e as Error).message)
+      } finally {
+        setLoading(false)
       }
     }
     run()
   }, [])
 
-  const latest = dashboard?.latest ?? null
-
-  const radarData = useMemo(() => {
-    if (!latest) return null
-    return {
-      labels: ['Resume', 'Coding', 'CS', 'Aptitude'],
-      data: [latest.resume_score ?? 0, latest.coding_score ?? 0, latest.cs_score ?? 0, latest.aptitude_score ?? 0],
-    }
-  }, [latest])
-
   useEffect(() => {
-    const canvas = document.getElementById('performanceChart') as HTMLCanvasElement | null
-    if (!canvas) return
-
-    if (!radarData) {
-      if (chartRef.current) chartRef.current.destroy()
-      chartRef.current = null
+    const canvas = canvasRef.current
+    if (!canvas || !latest) {
+      if (chartRef.current) {
+        chartRef.current.destroy()
+        chartRef.current = null
+      }
       return
     }
 
-    // Recreate chart for simplicity.
     if (chartRef.current) chartRef.current.destroy()
+
     chartRef.current = new Chart(canvas, {
-      type: 'radar',
+      type: 'bar',
       data: {
-        labels: radarData.labels,
+        labels: ['Resume', 'Coding', 'CS', 'Aptitude'],
         datasets: [
           {
-            label: 'Latest Attempt',
-            data: radarData.data,
-            fill: true,
+            label: 'Score',
+            data: [
+              latest.resume_score,
+              latest.coding_score,
+              latest.cs_score,
+              latest.aptitude_score,
+            ],
+            backgroundColor: [
+              'rgba(124, 108, 240, 0.7)',
+              'rgba(91, 159, 212, 0.7)',
+              'rgba(168, 180, 245, 0.85)',
+              'rgba(124, 108, 240, 0.45)',
+            ],
+            borderRadius: 8,
+            borderSkipped: false,
           },
         ],
       },
       options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+        },
         scales: {
-          r: { min: 0, max: 100 },
+          y: {
+            min: 0,
+            max: 100,
+            grid: { color: 'rgba(124, 108, 240, 0.08)' },
+          },
+          x: {
+            grid: { display: false },
+          },
         },
       },
     })
-  }, [radarData])
 
-  const onLogout = async () => {
-    await apiLogout()
-    onNeedAuthRefresh()
-    window.location.href = '/login'
+    return () => {
+      if (chartRef.current) {
+        chartRef.current.destroy()
+        chartRef.current = null
+      }
+    }
+  }, [latest])
+
+  const tips = improveTips.length ? improveTips : latest ? buildFallbackTips(latest) : []
+
+  const onNewAssessment = () => {
+    resetAssessment()
+    navigate('/assessment/resume')
+  }
+
+  if (loading) {
+    return (
+      <AppShell userEmail={userEmail} onLogout={onLogout}>
+        <LoadingState message="Loading dashboard…" />
+      </AppShell>
+    )
+  }
+
+  if (!latest) {
+    return (
+      <AppShell userEmail={userEmail} onLogout={onLogout}>
+        <Card title="No results yet">
+          <p className="clay-card__subtitle">
+            Complete the assessment flow to see your placement readiness.
+          </p>
+          {error ? <ErrorMessage message={error} /> : null}
+          <Button onClick={onNewAssessment}>Start assessment</Button>
+        </Card>
+      </AppShell>
+    )
   }
 
   return (
-    <div style={{ padding: 24, textAlign: 'left', maxWidth: 980, margin: '0 auto' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h2 style={{ margin: 0 }}>Placement Intelligence</h2>
-        <button onClick={onLogout}>Logout</button>
+    <AppShell userEmail={userEmail} onLogout={onLogout}>
+      {error ? <ErrorMessage message={error} /> : null}
+
+      <div className="dashboard-welcome">
+        <p className="eyebrow">Placement readiness</p>
+        <h1>Welcome back{userEmail ? `, ${userEmail}` : ''}</h1>
+        <p>Review your latest preparation results and choose your next step.</p>
       </div>
 
-      <hr />
+      <Card title="Overall placement readiness">
+        <div className="dashboard-hero">
+          <StatusBadge label={latest.readiness_label} />
+          <div className="dashboard-hero__score">{latest.overall_score.toFixed(1)}</div>
+        </div>
+      </Card>
 
-      {error ? <p style={{ color: 'red' }}>{error}</p> : null}
+      <Card title="Your scores">
+        <div className="score-grid">
+          <ScoreCard label="Resume" value={latest.resume_score} />
+          <ScoreCard label="Coding" value={latest.coding_score} />
+          <ScoreCard label="CS" value={latest.cs_score} />
+          <ScoreCard label="Aptitude" value={latest.aptitude_score} />
+        </div>
+      </Card>
 
-      <h3>Progress</h3>
-      <p>
-        CS: <b>{progress?.cs_score ?? 'Not Taken'}</b> | Coding: <b>{progress?.coding_score ?? 'Not Calculated'}</b> | Aptitude:{' '}
-        <b>{progress?.aptitude_score ?? 'Not Taken'}</b>
-      </p>
-
-      <h3>Start</h3>
-      <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-        <Link to="/cs-test">Take CS Test</Link>
-        <Link to="/aptitude-test">Take Aptitude Test</Link>
-        <Link to="/coding-analysis">Analyze Coding Profile</Link>
-        <Link to="/full-analysis">Upload Resume + Job Description</Link>
-      </div>
-
-      <hr />
-
-      <h3>Your Previous Attempts</h3>
-      {dashboard?.attempts?.length ? (
-        <ul style={{ paddingLeft: 18 }}>
-          {dashboard.attempts.map((a) => (
-            <li key={a.id} style={{ marginBottom: 12 }}>
-              <span
-                style={{
-                  padding: '6px 12px',
-                  borderRadius: 20,
-                  color: 'white',
-                  backgroundColor: badgeColor(a.readiness_label),
-                  display: 'inline-block',
-                  marginRight: 12,
-                }}
-              >
-                {a.readiness_label}
-              </span>
-              <div>Overall: {a.overall_score?.toFixed(2)}</div>
-              <div>
-                Resume: {a.resume_score?.toFixed(2)} | Coding: {a.coding_score?.toFixed(2)} | CS: {a.cs_score?.toFixed(2)} | Aptitude:{' '}
-                {a.aptitude_score?.toFixed(2)}
-              </div>
-            </li>
+      <Card title="What to improve">
+        <ul className="improve-list">
+          {tips.map((tip, i) => (
+            <li key={i}>{tip}</li>
           ))}
         </ul>
-      ) : (
-        <p>No attempts yet. Do a full analysis to generate your chart.</p>
-      )}
+      </Card>
 
-      <hr />
+      <Card title="Performance overview">
+        <div className="chart-wrap">
+          <canvas ref={canvasRef} />
+        </div>
+      </Card>
 
-      <h3>Performance Overview (Latest Attempt)</h3>
-      {latest ? (
-        <>
-          <canvas id="performanceChart" width="520" height="520"></canvas>
-        </>
-      ) : (
-        <p>Run a full analysis to generate the radar chart.</p>
-      )}
-    </div>
+      <div className="btn-row">
+        <Button variant="secondary" to="/attempts">
+          View previous attempts
+        </Button>
+        <Button variant="secondary" onClick={onNewAssessment}>
+          Start new assessment
+        </Button>
+      </div>
+    </AppShell>
   )
 }
-

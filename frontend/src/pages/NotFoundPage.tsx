@@ -1,11 +1,15 @@
-import { Link } from 'react-router-dom'
+import Button from '../components/Button'
+import Card from '../components/Card'
 
 export default function NotFoundPage() {
   return (
-    <div style={{ padding: 24 }}>
-      <h2>Page not found</h2>
-      <Link to="/dashboard">Go to Dashboard</Link>
+    <div className="app-main app-main--center">
+      <div className="auth-page">
+        <Card title="Page not found">
+          <p className="clay-card__subtitle">The page you requested does not exist.</p>
+          <Button to="/dashboard">Go to dashboard</Button>
+        </Card>
+      </div>
     </div>
   )
 }
-
